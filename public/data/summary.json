@@ -1,0 +1,211 @@
+{
+  "generatedAt": "2026-05-23T03:27:58.041Z",
+  "totalExhibitors": 7779,
+  "boothCount": 4679,
+  "logoCount": 2499,
+  "vrCount": 110,
+  "halls": [
+    {
+      "number": "9",
+      "hallNo": "09",
+      "name": "时尚·艺术馆",
+      "count": 311,
+      "boothCount": 217,
+      "topIndustries": [
+        {
+          "label": "其他",
+          "count": 67
+        },
+        {
+          "label": "工艺美术类",
+          "count": 61
+        },
+        {
+          "label": "艺术品类",
+          "count": 54
+        },
+        {
+          "label": "创意设计类",
+          "count": 47
+        }
+      ]
+    },
+    {
+      "number": "10",
+      "hallNo": "10",
+      "name": "文化产业综合馆A",
+      "count": 1781,
+      "boothCount": 1113,
+      "topIndustries": [
+        {
+          "label": "文化旅游类",
+          "count": 416
+        },
+        {
+          "label": "其他",
+          "count": 255
+        },
+        {
+          "label": "非物质文化遗产类",
+          "count": 219
+        },
+        {
+          "label": "创意设计类",
+          "count": 203
+        }
+      ]
+    },
+    {
+      "number": "11",
+      "hallNo": "11",
+      "name": "全球文化贸易馆",
+      "count": 731,
+      "boothCount": 29,
+      "topIndustries": [
+        {
+          "label": "其他",
+          "count": 347
+        },
+        {
+          "label": "文化旅游类",
+          "count": 178
+        },
+        {
+          "label": "创意设计类",
+          "count": 47
+        },
+        {
+          "label": "艺术品类",
+          "count": 46
+        }
+      ]
+    },
+    {
+      "number": "12",
+      "hallNo": "12",
+      "name": "文化产业综合馆B",
+      "count": 1809,
+      "boothCount": 1574,
+      "topIndustries": [
+        {
+          "label": "文化旅游类",
+          "count": 460
+        },
+        {
+          "label": "其他",
+          "count": 297
+        },
+        {
+          "label": "非物质文化遗产类",
+          "count": 227
+        },
+        {
+          "label": "创意设计类",
+          "count": 224
+        }
+      ]
+    },
+    {
+      "number": "13",
+      "hallNo": "13",
+      "name": "文化传承与创新馆",
+      "count": 961,
+      "boothCount": 220,
+      "topIndustries": [
+        {
+          "label": "工艺美术类",
+          "count": 467
+        },
+        {
+          "label": "其他",
+          "count": 127
+        },
+        {
+          "label": "非物质文化遗产类",
+          "count": 104
+        },
+        {
+          "label": "艺术品类",
+          "count": 94
+        }
+      ]
+    },
+    {
+      "number": "14",
+      "hallNo": "14",
+      "name": "文化产业综合馆C",
+      "count": 1053,
+      "boothCount": 748,
+      "topIndustries": [
+        {
+          "label": "文化旅游类",
+          "count": 247
+        },
+        {
+          "label": "非物质文化遗产类",
+          "count": 163
+        },
+        {
+          "label": "工艺美术类",
+          "count": 146
+        },
+        {
+          "label": "其他",
+          "count": 143
+        }
+      ]
+    },
+    {
+      "number": "15",
+      "hallNo": "15",
+      "name": "粤港澳大湾区文化产业创新馆",
+      "count": 839,
+      "boothCount": 727,
+      "topIndustries": [
+        {
+          "label": "其他",
+          "count": 196
+        },
+        {
+          "label": "文化旅游类",
+          "count": 157
+        },
+        {
+          "label": "创意设计类",
+          "count": 138
+        },
+        {
+          "label": "非物质文化遗产类",
+          "count": 70
+        }
+      ]
+    },
+    {
+      "number": "16",
+      "hallNo": "16",
+      "name": "文化科技馆",
+      "count": 161,
+      "boothCount": 51,
+      "topIndustries": [
+        {
+          "label": "影视动漫游戏类",
+          "count": 38
+        },
+        {
+          "label": "数字文化类",
+          "count": 33
+        },
+        {
+          "label": "其他",
+          "count": 28
+        },
+        {
+          "label": "新闻出版类",
+          "count": 24
+        }
+      ]
+    }
+  ],
+  "sourcePath": "/Users/ryanbzhou/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/wxid_5a6dasbgxykg21_ca22/msg/file/2026-05/culture-com/data/exhibitors_all.json",
+  "pdfPath": "/Users/ryanbzhou/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/wxid_5a6dasbgxykg21_ca22/msg/file/2026-05/文博会·全球AI切磋盛典展区交通指引指南（嘉宾）.pdf"
+}
