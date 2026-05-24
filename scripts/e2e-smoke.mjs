@@ -49,10 +49,12 @@ async function runDesktop(browser) {
   await page.goto(baseUrl, { waitUntil: "load" });
   await expectText(page, "文博会展商地图与路线 Agent");
   await expectText(page, "7,779", "展商统计");
-  await expectText(page, "9-16号馆示意地图");
+  await expectText(page, "9-16号馆总览");
   assert(await page.locator(".agent-fab").isVisible(), "Agent should start collapsed as a floating button");
   assert(await page.locator(".agent-panel").count() === 0, "Agent panel should not be open by default");
   assert(await page.locator(".hall-tile").count() === 8, "Expected 8 hall tiles");
+  assert(await page.locator(".hall-detail-card .hall-plan-image").isVisible(), "Selected hall detail map should be visible");
+  assert(await page.locator(".hall-detail-card .hall-map-marker").count() > 0, "Selected hall detail map should render exhibitor markers");
   assert(await page.locator(".exhibitor-card").count() === 72, "Expected initial 72 exhibitor cards");
   assert((await page.locator(".route-stop strong").first().innerText()).includes("11号馆"), "Default route should start at 11号馆");
 
@@ -63,8 +65,9 @@ async function runDesktop(browser) {
   assert(!searchTitle.includes("276"), "Search results should not be diluted by interest filters");
 
   await page.getByPlaceholder("搜公司、展位、AI、非遗、文旅...").fill("");
-  await page.getByRole("button", { name: /16/ }).click();
+  await page.locator(".hall-tile").filter({ hasText: "16" }).click();
   await expectText(page, "16号馆 · 文化科技馆");
+  assert(await page.locator('.hall-plan-map[data-hall="16"] .hall-plan-image').isVisible(), "Hall 16 floor plan should be visible");
   await page.locator(".pin-button").first().click();
   assert((await page.locator(".exhibitor-card.is-pinned").count()) === 1, "Pinning first exhibitor failed");
 
@@ -84,7 +87,8 @@ async function runDesktop(browser) {
   await expectText(page, "展商列表");
   await expectText(page, "路线建议");
   await page.locator(".inline-route-card").first().waitFor({ state: "visible", timeout: 30000 });
-  assert(await page.locator(".inline-hall.has-targets").count() > 0, "Inline route map should mark target halls");
+  assert(await page.locator(".inline-hall-map-card .hall-plan-image").first().isVisible(), "Inline route card should show a hall floor plan");
+  assert(await page.locator(".inline-hall-map-card .hall-map-marker.is-highlighted").count() > 0, "Inline route map should highlight target merchants");
   await page.locator(".inline-target-list button").first().click();
   await expectText(page, "个匹配结果");
   assert((await page.locator(".message").count()) >= 5, "Agent messages did not append");
@@ -113,6 +117,9 @@ async function runMobile(browser) {
   await page.goto(baseUrl, { waitUntil: "load" });
   await expectText(page, "文博会展商地图与路线 Agent");
   assert(await page.locator(".agent-fab").isVisible(), "Mobile agent should start as a floating button");
+  await page.locator(".hall-detail-card").scrollIntoViewIfNeeded();
+  await page.locator(".hall-detail-card .hall-plan-image").first().waitFor({ state: "visible", timeout: 10000 });
+  assert(await page.locator(".hall-detail-card .hall-plan-image").isVisible(), "Mobile hall detail floor plan should be visible");
   await page.locator(".agent-fab").click();
   await expectText(page, "文博会 Agent");
   assert(await page.locator(".hall-tile").count() === 8, "Mobile expected 8 hall tiles");

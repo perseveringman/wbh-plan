@@ -19,10 +19,72 @@ import {
 import React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { eventInfo, hallLayout, hallNotes, interests, sourceLinks } from "./eventData.js";
+import hall09Map from "./09 2.jpeg";
+import hall10Map from "./10 2.jpeg";
+import hall11Map from "./11 2.jpeg";
+import hall12Map from "./12 2.jpeg";
+import hall13Map from "./13 2.jpeg";
+import hall14Map from "./14 2.jpeg";
+import hall15Map from "./15 2.jpeg";
+import hall16Map from "./16 2.jpeg";
 
 const numberFormatter = new Intl.NumberFormat("zh-CN");
 const routeStart = { x: 61, y: 47, label: "南登录大厅 / 国展站C1-C2" };
 const sourceBase = "https://www.cnicif.com";
+const hallNumbers = ["09", "10", "11", "12", "13", "14", "15", "16"];
+const hallMapImages = {
+  "09": hall09Map,
+  "10": hall10Map,
+  "11": hall11Map,
+  "12": hall12Map,
+  "13": hall13Map,
+  "14": hall14Map,
+  "15": hall15Map,
+  "16": hall16Map,
+};
+
+const genericZoneBounds = {
+  A: { x1: 58, x2: 92, y1: 72, y2: 92, direction: "up", max: 12 },
+  B: { x1: 9, x2: 44, y1: 72, y2: 92, direction: "up", max: 12 },
+  C: { x1: 55, x2: 92, y1: 51, y2: 74, direction: "down", max: 24 },
+  D: { x1: 55, x2: 92, y1: 32, y2: 52, direction: "down", max: 18 },
+  E: { x1: 9, x2: 45, y1: 43, y2: 71, direction: "up", max: 18 },
+  F: { x1: 9, x2: 45, y1: 29, y2: 47, direction: "up", max: 18 },
+  G: { x1: 56, x2: 92, y1: 9, y2: 31, direction: "down", max: 18 },
+  H: { x1: 9, x2: 45, y1: 9, y2: 31, direction: "down", max: 18 },
+  J: { x1: 42, x2: 62, y1: 40, y2: 60, direction: "down", max: 12 },
+};
+
+const hallZoneBounds = {
+  "11": {
+    A: { x1: 57, x2: 91, y1: 79, y2: 92, direction: "up", max: 8 },
+    B: { x1: 10, x2: 45, y1: 79, y2: 92, direction: "up", max: 4 },
+    C: { x1: 50, x2: 92, y1: 58, y2: 79, direction: "down", max: 24 },
+    D: { x1: 51, x2: 78, y1: 50, y2: 68, direction: "down", max: 8 },
+    E: { x1: 53, x2: 92, y1: 33, y2: 58, direction: "down", max: 12 },
+    F: { x1: 9, x2: 45, y1: 54, y2: 76, direction: "up", max: 12 },
+    G: { x1: 54, x2: 92, y1: 8, y2: 33, direction: "down", max: 8 },
+    H: { x1: 9, x2: 47, y1: 8, y2: 34, direction: "down", max: 5 },
+  },
+  "13": {
+    A: { x1: 56, x2: 92, y1: 78, y2: 94, direction: "up", max: 8 },
+    B: { x1: 8, x2: 45, y1: 76, y2: 94, direction: "up", max: 2 },
+    C: { x1: 55, x2: 92, y1: 55, y2: 76, direction: "down", max: 14 },
+    D: { x1: 55, x2: 92, y1: 32, y2: 55, direction: "down", max: 9 },
+    E: { x1: 8, x2: 45, y1: 35, y2: 74, direction: "up", max: 9 },
+    H: { x1: 8, x2: 92, y1: 8, y2: 31, direction: "down", max: 10 },
+  },
+  "15": {
+    A: { x1: 8, x2: 45, y1: 8, y2: 91, direction: "up", max: 56 },
+    B: { x1: 55, x2: 93, y1: 8, y2: 91, direction: "up", max: 56 },
+  },
+  "16": {
+    A: { x1: 8, x2: 45, y1: 8, y2: 72, direction: "down", max: 12 },
+    B: { x1: 55, x2: 93, y1: 8, y2: 45, direction: "down", max: 24 },
+    C: { x1: 55, x2: 93, y1: 45, y2: 91, direction: "down", max: 29 },
+    D: { x1: 8, x2: 45, y1: 72, y2: 91, direction: "down", max: 4 },
+  },
+};
 
 const starterPrompts = [
   "我想看AI和文旅，帮我规划路线",
@@ -45,8 +107,110 @@ function unique(items) {
   return Array.from(new Set(items));
 }
 
+function uniqueById(items) {
+  const map = new Map();
+  items.filter(Boolean).forEach((item) => {
+    if (!map.has(item.id)) map.set(item.id, item);
+  });
+  return Array.from(map.values());
+}
+
 function compactText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeHallNo(value) {
+  const match = String(value || "").match(/(?:^|\D)(0?9|1[0-6])(?:\D|$)/);
+  if (!match) return "";
+  const number = Number(match[1]);
+  return number === 9 ? "09" : String(number);
+}
+
+function boothHallNo(booth) {
+  const compact = compactText(booth).replace(/\s+/g, "").toUpperCase();
+  const codeMatch = compact.match(/(?:^|[^0-9])(0?9|1[0-6])(?=[A-Z])/);
+  if (codeMatch) return Number(codeMatch[1]) === 9 ? "09" : String(Number(codeMatch[1]));
+  const labelMatch = compact.match(/(0?9|1[0-6])号馆/);
+  if (labelMatch) return Number(labelMatch[1]) === 9 ? "09" : String(Number(labelMatch[1]));
+  return "";
+}
+
+function getResolvedHallNo(exhibitor) {
+  const fromBooth = boothHallNo(exhibitor?.booth);
+  if (hallNumbers.includes(fromBooth)) return fromBooth;
+  const fromHall = normalizeHallNo(exhibitor?.hallNo);
+  return hallNumbers.includes(fromHall) ? fromHall : "00";
+}
+
+function formatHallNumber(hallNo) {
+  const normalized = normalizeHallNo(hallNo);
+  return normalized === "09" ? "9" : String(Number(normalized || hallNo) || "未标注");
+}
+
+function parseBoothCode(exhibitor) {
+  const hallNo = getResolvedHallNo(exhibitor);
+  const compact = compactText(exhibitor?.booth).replace(/\s+/g, "").toUpperCase();
+  const pattern = new RegExp(`${Number(hallNo) === 9 ? "0?9" : hallNo}([A-Z])0*(\\d{1,3})`);
+  const match = compact.match(pattern) || compact.match(/([A-Z])0*(\d{1,3})/);
+  if (!match) {
+    return { hallNo, area: "", number: 0, label: compactText(exhibitor?.booth) || "展位待查" };
+  }
+  return {
+    hallNo,
+    area: match[1],
+    number: Number(match[2]) || 0,
+    label: compactText(exhibitor?.booth) || `${hallNo}${match[1]}${match[2]}`,
+  };
+}
+
+function hasMappableBooth(exhibitor) {
+  const booth = parseBoothCode(exhibitor);
+  return Boolean(booth.area && booth.number > 0 && hallNumbers.includes(booth.hallNo));
+}
+
+function mapReadinessScore(exhibitor) {
+  if (hasMappableBooth(exhibitor)) return 28;
+  if (exhibitor?.booth) return 8;
+  if (getResolvedHallNo(exhibitor) !== "00") return 2;
+  return -20;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function hashString(value) {
+  let hash = 0;
+  String(value || "").split("").forEach((char) => {
+    hash = (hash * 31 + char.charCodeAt(0)) % 9973;
+  });
+  return hash;
+}
+
+function boothMarkerPosition(exhibitor, index = 0) {
+  const { hallNo, area, number } = parseBoothCode(exhibitor);
+  const bounds = (hallZoneBounds[hallNo] && hallZoneBounds[hallNo][area]) || genericZoneBounds[area];
+  const seed = hashString(`${exhibitor?.id || ""}${exhibitor?.booth || ""}${index}`);
+
+  if (!bounds) {
+    return {
+      x: 12 + (seed % 76),
+      y: 12 + ((Math.floor(seed / 7) + index * 11) % 76),
+    };
+  }
+
+  const max = bounds.max || 24;
+  const normalized = number > 0 ? clamp((number - 1) / Math.max(max - 1, 1), 0, 1) : (seed % 100) / 100;
+  const yProgress = bounds.direction === "up" ? 1 - normalized : normalized;
+  const xJitter = (((seed % 9) - 4) / 4) * Math.min((bounds.x2 - bounds.x1) * 0.16, 5);
+  const yJitter = ((((Math.floor(seed / 13) + index) % 7) - 3) / 3) * Math.min((bounds.y2 - bounds.y1) * 0.06, 3);
+  const x = bounds.x1 + (bounds.x2 - bounds.x1) * (0.24 + ((seed % 37) / 36) * 0.52) + xJitter;
+  const y = bounds.y1 + (bounds.y2 - bounds.y1) * yProgress + yJitter;
+
+  return {
+    x: clamp(x, 5, 95),
+    y: clamp(y, 5, 95),
+  };
 }
 
 function tokenize(query) {
@@ -121,7 +285,7 @@ function buildRoute(exhibitors, pinnedIds, activeInterests, query) {
   const forceAiHall = activeInterests.includes("ai") || /ai|人工智能|切磋|waytoagi|大模型|智能体/i.test(query);
   const aiHallPicks = forceAiHall
     ? exhibitors
-        .filter((item) => item.hallNo === "11")
+        .filter((item) => getResolvedHallNo(item) === "11")
         .map((item) => ({
           item,
           score: scoreExhibitor(item, "AI 人工智能 AIGC 大模型 VR 数字 科技 文化贸易", ["ai", "trade"]),
@@ -136,7 +300,7 @@ function buildRoute(exhibitors, pinnedIds, activeInterests, query) {
       item,
       score: scoreExhibitor(item, query, activeInterests),
     }))
-    .filter(({ item, score }) => score > 0 && item.hallNo !== "00")
+    .filter(({ item, score }) => score > 0 && getResolvedHallNo(item) !== "00")
     .sort((a, b) => b.score - a.score)
     .slice(0, 80)
     .map(({ item }) => item);
@@ -148,8 +312,9 @@ function buildRoute(exhibitors, pinnedIds, activeInterests, query) {
   if (!pool.length) return [];
 
   const grouped = pool.reduce((acc, item) => {
-    if (!acc[item.hallNo]) acc[item.hallNo] = [];
-    if (acc[item.hallNo].length < 4) acc[item.hallNo].push(item);
+    const hallNo = getResolvedHallNo(item);
+    if (!acc[hallNo]) acc[hallNo] = [];
+    if (acc[hallNo].length < 4) acc[hallNo].push(item);
     return acc;
   }, {});
 
@@ -191,7 +356,7 @@ function formatExhibitorList(items) {
     .map((item, index) => {
       const booth = item.booth ? ` ${item.booth}` : " 展位待查";
       const intro = item.intro ? `：${item.intro.slice(0, 42)}${item.intro.length > 42 ? "..." : ""}` : "";
-      return `${index + 1}. ${item.name}｜${Number(item.hallNo) || "未标注"}号馆${booth}｜${item.industry}${intro}`;
+      return `${index + 1}. ${item.name}｜${formatHallNumber(getResolvedHallNo(item))}号馆${booth}｜${item.industry}${intro}`;
     })
     .join("\n");
 }
@@ -258,7 +423,7 @@ function makeAnswer(query, exhibitors, activeInterests, routePlan) {
   if (/ai|人工智能|切磋|waytoagi|11号馆|11馆/i.test(lower)) {
     const aiMatches = exhibitors
       .map((item) => ({ item, score: scoreExhibitor(item, "AI 人工智能 大模型 机器人 VR 元宇宙 数字", ["ai"]) }))
-      .filter(({ item, score }) => score > 0 && ["11", "15", "16"].includes(item.hallNo))
+      .filter(({ item, score }) => score > 0 && ["11", "15", "16"].includes(getResolvedHallNo(item)))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map(({ item }) => item);
@@ -310,7 +475,7 @@ function payloadExhibitor(item) {
     id: item.id,
     name: item.name,
     shortName: item.shortName,
-    hallNo: item.hallNo,
+    hallNo: getResolvedHallNo(item),
     hallName: item.hallName,
     booth: item.booth,
     industry: item.industry,
@@ -329,64 +494,115 @@ function payloadRouteStop(stop) {
   };
 }
 
+function HallPlanMap({ hallNo, exhibitors = [], highlightedIds = new Set(), onMarkerClick, compact = false }) {
+  const image = hallMapImages[hallNo];
+  const markers = uniqueById(exhibitors)
+    .filter((item) => getResolvedHallNo(item) === hallNo)
+    .slice(0, compact ? 18 : 80)
+    .map((item, index) => {
+      const booth = parseBoothCode(item);
+      const position = boothMarkerPosition(item, index);
+      return {
+        item,
+        booth,
+        index,
+        ...position,
+        highlighted: highlightedIds.has(item.id),
+      };
+    });
+  const routeLine = markers
+    .filter((marker) => marker.highlighted || compact)
+    .map((marker) => `${marker.x},${marker.y}`)
+    .join(" ");
+
+  return (
+    <div className={`hall-plan-map ${compact ? "is-compact" : ""}`} data-hall={hallNo}>
+      <div className="hall-plan-stage">
+        {image ? (
+          <img className="hall-plan-image" src={image} alt={`${formatHallNumber(hallNo)}号馆展区位置图`} loading={compact ? "lazy" : "eager"} />
+        ) : (
+          <div className="hall-plan-missing">未找到 {formatHallNumber(hallNo)} 号馆位置图</div>
+        )}
+        {routeLine && markers.length > 1 && (
+          <svg className="hall-plan-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points={routeLine} />
+          </svg>
+        )}
+        {markers.map((marker) => (
+          <button
+            key={marker.item.id}
+            className={`hall-map-marker ${marker.highlighted ? "is-highlighted" : ""}`}
+            style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
+            type="button"
+            title={`${marker.item.name}｜${marker.booth.label}`}
+            onClick={() => onMarkerClick?.(marker.item)}
+          >
+            <span>{marker.index + 1}</span>
+            <em>{marker.booth.area || "?"}</em>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function InlineRouteMap({ routePlan = [], exhibitors = [], onHallSelect, onExhibitorSelect }) {
+  const initialHall = routePlan[0]?.hallNo || "";
+  const [activeHall, setActiveHall] = useState(initialHall);
+
+  useEffect(() => {
+    if (initialHall) setActiveHall(initialHall);
+  }, [initialHall]);
+
   if (!routePlan.length) return null;
 
-  const routeSet = new Set(routePlan.map((stop) => stop.hallNo));
-  const markedByHall = exhibitors.reduce((acc, item) => {
-    if (!acc[item.hallNo]) acc[item.hallNo] = [];
-    acc[item.hallNo].push(item);
-    return acc;
-  }, {});
-  const miniPoints = [routeStart, ...routePlan.map((stop) => hallCenter(stop.hallNo))]
-    .map((point) => `${point.x},${point.y}`)
-    .join(" ");
+  const targetIds = new Set(exhibitors.map((item) => item.id));
+  const currentHall = activeHall || routePlan[0]?.hallNo;
+  const activeStop = routePlan.find((stop) => stop.hallNo === currentHall) || routePlan[0];
+  const activeExhibitors = activeStop?.exhibitors || [];
 
   return (
     <div className="inline-route-card">
       <div className="inline-route-head">
-        <strong>路线图</strong>
+        <strong>场馆路线图</strong>
         <span>{exhibitors.length} 个目标商家 · {routePlan.length} 个展馆</span>
-      </div>
-      <div className="inline-map" aria-label="对话内路线图">
-        <svg className="inline-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polyline points={miniPoints} />
-        </svg>
-        <div className="inline-entrance" style={{ left: `${routeStart.x}%`, top: `${routeStart.y}%` }}>
-          起点
-        </div>
-        {hallLayout.map((hall) => {
-          const items = markedByHall[hall.hallNo] || [];
-          const routed = routeSet.has(hall.hallNo);
-          return (
-            <button
-              key={hall.hallNo}
-              className={`inline-hall ${routed ? "is-routed" : ""} ${items.length ? "has-targets" : ""}`}
-              style={{ left: `${hall.x}%`, top: `${hall.y}%`, width: `${hall.w}%`, height: `${hall.h}%` }}
-              type="button"
-              onClick={() => onHallSelect?.(hall.hallNo)}
-            >
-              <span>{Number(hall.hallNo)}</span>
-              {items.length > 0 && <em>{items.length}</em>}
-            </button>
-          );
-        })}
       </div>
       <div className="inline-route-stops">
         {routePlan.slice(0, 6).map((stop, index) => (
-          <button key={stop.hallNo} type="button" onClick={() => onHallSelect?.(stop.hallNo)}>
+          <button
+            key={stop.hallNo}
+            className={stop.hallNo === currentHall ? "is-active" : ""}
+            type="button"
+            onClick={() => {
+              setActiveHall(stop.hallNo);
+              onHallSelect?.(stop.hallNo);
+            }}
+          >
             <span>{index + 1}</span>
             <strong>{stop.title}</strong>
             <em>{stop.exhibitors.length}家</em>
           </button>
         ))}
       </div>
+      <div className="inline-hall-map-card" aria-label={`${activeStop?.title || ""} 对话内场馆图`}>
+        <div className="inline-hall-map-head">
+          <strong>{activeStop?.title}</strong>
+          <span>{activeStop?.note}</span>
+        </div>
+        <HallPlanMap
+          hallNo={activeStop?.hallNo}
+          exhibitors={activeExhibitors}
+          highlightedIds={targetIds}
+          onMarkerClick={onExhibitorSelect}
+          compact
+        />
+      </div>
       <div className="inline-target-list">
         {exhibitors.slice(0, 8).map((item) => (
           <button key={item.id} type="button" onClick={() => onExhibitorSelect?.(item)}>
             <strong>{item.shortName || item.name}</strong>
             <span>
-              {Number(item.hallNo) || "未标注"}号馆 {item.booth || "展位待查"}
+              {formatHallNumber(getResolvedHallNo(item))}号馆 {item.booth || "展位待查"}
             </span>
           </button>
         ))}
@@ -440,10 +656,14 @@ export default function App() {
   }, [messages]);
 
   const hallStats = useMemo(() => {
-    if (summary?.halls) return summary.halls;
+    const names = (summary?.halls || []).reduce((acc, hall) => {
+      acc[hall.hallNo] = hall.name;
+      return acc;
+    }, {});
     const counts = exhibitors.reduce((acc, item) => {
-      if (!acc[item.hallNo]) acc[item.hallNo] = { hallNo: item.hallNo, number: String(Number(item.hallNo)), name: item.hallName, count: 0 };
-      acc[item.hallNo].count += 1;
+      const hallNo = getResolvedHallNo(item);
+      if (!acc[hallNo]) acc[hallNo] = { hallNo, number: String(Number(hallNo)), name: names[hallNo] || item.hallName, count: 0 };
+      acc[hallNo].count += 1;
       return acc;
     }, {});
     return Object.values(counts);
@@ -464,7 +684,7 @@ export default function App() {
         interestScore,
       }))
       .filter(({ item, queryScore, interestScore }) => {
-        if (!hasSearch && selectedHall && item.hallNo !== selectedHall) return false;
+        if (!hasSearch && selectedHall && getResolvedHallNo(item) !== selectedHall) return false;
         if (pinnedIds.has(item.id)) return true;
         if (hasSearch) return queryScore > 0;
         if (selectedInterests.length === 0) return true;
@@ -479,13 +699,18 @@ export default function App() {
     [exhibitors, pinnedIds, selectedInterests, routeQuery, query],
   );
 
-  const routePoints = useMemo(() => {
-    const stops = routePlan.map((stop) => hallCenter(stop.hallNo));
-    return [routeStart, ...stops].map((point) => `${point.x},${point.y}`).join(" ");
-  }, [routePlan]);
-
   const visibleExhibitors = filtered.slice(0, 72);
   const selectedHallStat = hallStats.find((hall) => hall.hallNo === selectedHall);
+  const highlightedIds = useMemo(
+    () => new Set([...Array.from(pinnedIds), ...routePlan.flatMap((stop) => stop.exhibitors.map((item) => item.id))]),
+    [pinnedIds, routePlan],
+  );
+  const selectedHallMapExhibitors = useMemo(() => {
+    if (!selectedHall) return [];
+    const routeItems = routePlan.flatMap((stop) => stop.exhibitors).filter((item) => getResolvedHallNo(item) === selectedHall);
+    const visibleItems = visibleExhibitors.filter((item) => getResolvedHallNo(item) === selectedHall);
+    return uniqueById([...routeItems, ...visibleItems]).slice(0, 80);
+  }, [selectedHall, routePlan, visibleExhibitors]);
 
   function toggleInterest(id) {
     setSelectedInterests((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -510,7 +735,7 @@ export default function App() {
   }
 
   function selectInlineExhibitor(exhibitor) {
-    setSelectedHall(exhibitor.hallNo);
+    setSelectedHall(getResolvedHallNo(exhibitor));
     setPinnedIds((current) => {
       const next = new Set(current);
       next.add(exhibitor.id);
@@ -535,7 +760,7 @@ export default function App() {
     setAgentStatus("DeepSeek V4 · 思考中");
     if (answer.pinned?.length) {
       setPinnedIds(new Set(answer.pinned.slice(0, 18).map((item) => item.id)));
-      const firstHall = answer.pinned.find((item) => item.hallNo !== "00")?.hallNo;
+      const firstHall = answer.pinned.map(getResolvedHallNo).find((hallNo) => hallNo !== "00");
       if (firstHall) setSelectedHall(firstHall);
     }
     const pendingId = `agent-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -686,7 +911,15 @@ export default function App() {
                     <p>{stop.note}</p>
                     <span>{stop.duration}</span>
                     {stop.exhibitors.slice(0, 2).map((item) => (
-                      <button className="route-exhibitor" key={item.id} type="button" onClick={() => pinExhibitor(item)}>
+                      <button
+                        className="route-exhibitor"
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedHall(getResolvedHallNo(item));
+                          pinExhibitor(item);
+                        }}
+                      >
                         {item.name}
                       </button>
                     ))}
@@ -722,27 +955,20 @@ export default function App() {
           <div className="venue-board">
             <div className="board-header">
               <div>
-                <span className="eyebrow">9-16号馆示意地图</span>
+                <span className="eyebrow">9-16号馆总览 / 点击查看场馆图</span>
                 <h2>{selectedHall ? `${Number(selectedHall)}号馆 · ${selectedHallStat?.name || ""}` : "全部展馆"}</h2>
               </div>
-              <button className="ghost-button" type="button" onClick={() => setSelectedHall(selectedHall ? "" : "11")}>
-                {selectedHall ? "查看全部" : "回到11号馆"}
+              <button className="ghost-button" type="button" onClick={() => setSelectedHall("11")}>
+                回到11号馆
               </button>
             </div>
 
             <div className="map-canvas">
-              <svg className="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <polyline points={routePoints} />
-              </svg>
-              <div className="entrance-marker" style={{ left: `${routeStart.x}%`, top: `${routeStart.y}%` }}>
-                <Train size={16} />
-                <span>南登录大厅</span>
-              </div>
               {hallLayout.map((hall) => {
                 const stat = hallStats.find((item) => item.hallNo === hall.hallNo);
                 const isSelected = selectedHall === hall.hallNo;
                 const isRouted = routePlan.some((stop) => stop.hallNo === hall.hallNo);
-                const pinnedCount = exhibitors.filter((item) => item.hallNo === hall.hallNo && pinnedIds.has(item.id)).length;
+                const pinnedCount = exhibitors.filter((item) => getResolvedHallNo(item) === hall.hallNo && highlightedIds.has(item.id)).length;
                 return (
                   <button
                     key={hall.hallNo}
@@ -759,6 +985,38 @@ export default function App() {
                 );
               })}
             </div>
+
+            {selectedHall && (
+              <section className="hall-detail-card">
+                <div className="hall-detail-header">
+                  <div>
+                    <span className="eyebrow">场馆展区位置图</span>
+                    <h3>
+                      {formatHallNumber(selectedHall)}号馆 · {selectedHallStat?.name || "展区位置"}
+                    </h3>
+                  </div>
+                  <span>{selectedHallMapExhibitors.length} 个当前结果 / 路线目标已标注</span>
+                </div>
+                <HallPlanMap
+                  hallNo={selectedHall}
+                  exhibitors={selectedHallMapExhibitors}
+                  highlightedIds={highlightedIds}
+                  onMarkerClick={(item) => {
+                    setPinnedIds((current) => new Set([...Array.from(current), item.id]));
+                    setQuery(item.name);
+                    document.querySelector(".exhibitor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                />
+                <div className="hall-detail-legend">
+                  <span>
+                    <i className="legend-dot is-target" /> Agent / 路线目标
+                  </span>
+                  <span>
+                    <i className="legend-dot" /> 当前筛选展商
+                  </span>
+                </div>
+              </section>
+            )}
 
             {showGuide && (
               <div className="guide-strip">
@@ -832,7 +1090,7 @@ export default function App() {
                   <h3>{item.shortName || item.name}</h3>
                   {item.shortName && <p className="full-name">{item.name}</p>}
                   <div className="meta-row">
-                    <span>{Number(item.hallNo) || "未标注"}号馆</span>
+                    <span>{formatHallNumber(getResolvedHallNo(item))}号馆</span>
                     <span>{item.booth || "展位待查"}</span>
                     <span>{item.industry}</span>
                   </div>

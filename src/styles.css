@@ -603,6 +603,171 @@ button {
   font-weight: 800;
 }
 
+.hall-detail-card {
+  margin: 0 18px 18px;
+  overflow: hidden;
+  border: 1px solid #dfe9ed;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.hall-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2ecef;
+}
+
+.hall-detail-header h3 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.hall-detail-header > span {
+  color: #5d737c;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.hall-plan-map {
+  margin: 12px;
+  max-height: min(86vh, 820px);
+  overflow: auto;
+  border: 1px solid #d8e7eb;
+  border-radius: 8px;
+  background: #eef7f8;
+  touch-action: pan-x pan-y;
+}
+
+.hall-plan-stage {
+  position: relative;
+  width: 100%;
+  min-width: 680px;
+  aspect-ratio: 0.6;
+}
+
+.hall-plan-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hall-plan-missing {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  color: #5d737c;
+}
+
+.hall-plan-route {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hall-plan-route polyline {
+  fill: none;
+  stroke: #ff6348;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 3 2;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9));
+}
+
+.hall-map-marker {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 22px auto;
+  align-items: center;
+  gap: 3px;
+  min-width: 42px;
+  height: 28px;
+  padding: 2px 6px 2px 3px;
+  color: #09323a;
+  border: 2px solid #fff;
+  background: rgba(255, 214, 102, 0.94);
+  border-radius: 18px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+  transform: translate(-50%, -50%);
+}
+
+.hall-map-marker span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  background: #071317;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.hall-map-marker em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.hall-map-marker.is-highlighted {
+  color: #fff;
+  background: #f05d42;
+  animation: markerPulse 1400ms ease-in-out infinite;
+}
+
+.hall-map-marker.is-highlighted span {
+  color: #f05d42;
+  background: #fff;
+}
+
+.hall-detail-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 16px 14px;
+  color: #5d737c;
+  font-size: 12px;
+}
+
+.hall-detail-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  background: #ffd666;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #d5e2e6;
+}
+
+.legend-dot.is-target {
+  background: #f05d42;
+}
+
+@keyframes markerPulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24), 0 0 0 0 rgba(240, 93, 66, 0.36);
+  }
+
+  50% {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24), 0 0 0 8px rgba(240, 93, 66, 0);
+  }
+}
+
 .guide-strip {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1122,6 +1287,63 @@ button {
   font-weight: 800;
 }
 
+.inline-route-stops button.is-active {
+  border-color: #f05d42;
+  background: #fff5ef;
+}
+
+.inline-hall-map-card {
+  margin: 0 10px 10px;
+  overflow: hidden;
+  border: 1px solid #dbe8ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.inline-hall-map-head {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #e5eef1;
+}
+
+.inline-hall-map-head strong {
+  font-size: 13px;
+}
+
+.inline-hall-map-head span {
+  color: #5d737c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.inline-hall-map-card .hall-plan-map {
+  max-height: 270px;
+  margin: 8px;
+}
+
+.hall-plan-map.is-compact .hall-plan-stage {
+  min-width: 360px;
+}
+
+.hall-plan-map.is-compact .hall-map-marker {
+  grid-template-columns: 18px auto;
+  min-width: 34px;
+  height: 23px;
+  padding: 1px 5px 1px 2px;
+  border-width: 1px;
+}
+
+.hall-plan-map.is-compact .hall-map-marker span {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.hall-plan-map.is-compact .hall-map-marker em {
+  font-size: 10px;
+}
+
 .inline-target-list button {
   display: grid;
   gap: 3px;
@@ -1346,6 +1568,40 @@ button {
     min-height: 470px;
     height: 470px;
     margin: 12px;
+  }
+
+  .hall-detail-card {
+    margin: 0 12px 12px;
+  }
+
+  .hall-detail-header {
+    display: grid;
+    padding: 12px;
+  }
+
+  .hall-detail-header > span {
+    text-align: left;
+  }
+
+  .hall-plan-map {
+    max-height: 72vh;
+    margin: 10px;
+  }
+
+  .hall-plan-stage {
+    min-width: 520px;
+  }
+
+  .hall-map-marker {
+    grid-template-columns: 20px auto;
+    min-width: 38px;
+    height: 25px;
+  }
+
+  .hall-map-marker span {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 
   .hall-tile {
