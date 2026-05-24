@@ -54,7 +54,7 @@ function buildMessages(payload) {
     {
       role: "system",
       content:
-        "你是2026深圳文博会游客路线规划 Agent。必须只基于用户请求和提供的展商/路线/交通数据作答，不编造展位、展馆或公司。输出中文，简洁但可执行。若用户问交通，优先给到达路线；若用户问产品/兴趣/公司，必须包含“展商列表：”和“路线建议：”两个小节。展商列表要列出展商名、馆号、展位和推荐理由；路线建议要按展馆分布排序，从南登录大厅/国展站C1-C2出发。不要提到你看不到的数据。",
+        "你是2026深圳文博会游客路线规划 Agent。必须只基于用户请求和提供的展商/路线/交通数据作答，不编造展位、展馆或公司。输出中文，简洁但可执行。请使用 Markdown 组织内容，展商名可加粗。若用户问交通，优先给到达路线；若用户问产品/兴趣/公司，必须包含“展商列表：”和“路线建议：”两个小节。展商列表要列出展商名、馆号、展位和推荐理由；路线建议要按展馆分布排序，从南登录大厅/国展站C1-C2出发。不要提到你看不到的数据。",
     },
     {
       role: "user",
@@ -91,7 +91,7 @@ export async function callDeepSeekAgent(payload) {
     return {
       ok: false,
       status: "missing_key",
-      text: payload.fallbackText || "DeepSeek API key 未配置，已使用本地路线规划结果。",
+      text: payload.fallbackText || "在线导览服务暂未配置，已使用本地路线规划结果。",
       model: null,
     };
   }
@@ -127,17 +127,17 @@ export async function callDeepSeekAgent(payload) {
       ok: false,
       status: "api_error",
       statusCode: response.status,
-      text: payload.fallbackText || "DeepSeek 暂时不可用，已使用本地路线规划结果。",
+      text: payload.fallbackText || "在线导览服务暂时不可用，已使用本地路线规划结果。",
       model,
       error: message.slice(0, 500),
     };
   }
 
-  const text = compact(data?.choices?.[0]?.message?.content);
+  const text = String(data?.choices?.[0]?.message?.content || "").trim();
   return {
     ok: Boolean(text),
     status: text ? "deepseek" : "empty_response",
-    text: text || payload.fallbackText || "DeepSeek 未返回内容，已使用本地路线规划结果。",
+    text: text || payload.fallbackText || "在线导览服务未返回内容，已使用本地路线规划结果。",
     model: data?.model || model,
     usage: data?.usage || null,
   };

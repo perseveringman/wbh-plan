@@ -18,6 +18,10 @@ body {
   min-width: 320px;
 }
 
+body.has-route-fullscreen {
+  overflow: hidden;
+}
+
 button,
 input {
   font: inherit;
@@ -32,6 +36,15 @@ button {
   padding-bottom: 104px;
   background:
     linear-gradient(180deg, #43bed0 0, #43bed0 430px, #061014 430px, #071317 100%);
+}
+
+.guide-screen,
+.mobile-bottom-tabs {
+  display: none;
+}
+
+.info-screen {
+  display: block;
 }
 
 .hero {
@@ -1076,14 +1089,105 @@ button {
   line-height: 1.55;
 }
 
+.message.has-route {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
 .message-text {
   white-space: pre-line;
+}
+
+.message-text .markdown-body {
+  white-space: normal;
+}
+
+.markdown-body {
+  display: grid;
+  gap: 8px;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5 {
+  margin: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 18px;
+}
+
+.markdown-body li + li {
+  margin-top: 5px;
+}
+
+.markdown-body strong {
+  color: #10202a;
+  font-weight: 850;
+}
+
+.markdown-body code {
+  padding: 1px 5px;
+  color: #0a4d58;
+  background: #edf7f8;
+  border-radius: 5px;
+  font-size: 0.92em;
+}
+
+.markdown-body a {
+  color: #008ea2;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.message-details {
+  margin-top: 8px;
+  border: 1px solid #dbe8ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.message-details summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 11px;
+  color: #31515b;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.message-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.message-details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.message-details .markdown-body {
+  padding: 0 12px 12px;
+  color: #203a44;
 }
 
 .message.agent {
   align-self: flex-start;
   background: #fff;
   border: 1px solid #dce8ec;
+}
+
+.message.agent.has-route {
+  background: transparent;
+  border: 0;
 }
 
 .message.is-pending {
@@ -1122,6 +1226,21 @@ button {
 .inline-route-head span {
   color: #5d737c;
   font-size: 12px;
+}
+
+.route-expand-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 8px;
+  color: #fff;
+  border: 0;
+  background: #071317;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .inline-map {
@@ -1323,7 +1442,7 @@ button {
 }
 
 .hall-plan-map.is-compact .hall-plan-stage {
-  min-width: 360px;
+  min-width: 0;
 }
 
 .hall-plan-map.is-compact .hall-map-marker {
@@ -1342,6 +1461,171 @@ button {
 
 .hall-plan-map.is-compact .hall-map-marker em {
   font-size: 10px;
+}
+
+.route-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));
+  color: #10202a;
+  background: #f4fafb;
+}
+
+.route-fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.route-fullscreen-header strong,
+.route-fullscreen-header span {
+  display: block;
+}
+
+.route-fullscreen-header strong {
+  font-size: 18px;
+}
+
+.route-fullscreen-header span {
+  margin-top: 3px;
+  color: #5d737c;
+  font-size: 12px;
+}
+
+.route-fullscreen-header button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  border: 0;
+  background: #071317;
+  border-radius: 8px;
+}
+
+.route-fullscreen-stops {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.route-fullscreen-stops button {
+  display: inline-grid;
+  grid-template-columns: 22px max-content auto;
+  align-items: center;
+  gap: 6px;
+  min-width: max-content;
+  min-height: 38px;
+  padding: 7px 9px;
+  text-align: left;
+  border: 1px solid #dbe8ec;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.route-fullscreen-stops button.is-active {
+  color: #fff;
+  border-color: #008ea2;
+  background: #008ea2;
+}
+
+.route-fullscreen-stops button span,
+.route-fullscreen-stops button em {
+  display: grid;
+  place-items: center;
+}
+
+.route-fullscreen-stops button span {
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  background: #f05d42;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.route-fullscreen-stops button strong {
+  font-size: 13px;
+}
+
+.route-fullscreen-stops button em {
+  color: #008ea2;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.route-fullscreen-stops button.is-active em {
+  color: #d9fbff;
+}
+
+.route-fullscreen-map {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #d2e2e6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.route-fullscreen-map .hall-plan-map {
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.route-fullscreen-map .hall-plan-stage {
+  min-width: 0;
+}
+
+.route-fullscreen-map .hall-map-marker {
+  grid-template-columns: 20px auto;
+  min-width: 38px;
+  height: 25px;
+}
+
+.route-fullscreen-map .hall-map-marker span {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+
+.route-fullscreen-targets {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.route-fullscreen-targets button {
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+  padding: 9px;
+  text-align: left;
+  border: 1px solid #dbe8ec;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.route-fullscreen-targets strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.route-fullscreen-targets span {
+  color: #5d737c;
+  font-size: 12px;
 }
 
 .inline-target-list button {
@@ -1413,10 +1697,88 @@ button {
 }
 
 @media (max-width: 820px) {
+  :root {
+    --mobile-tabbar-height: calc(64px + env(safe-area-inset-bottom));
+  }
+
   .app-shell {
-    padding-bottom: 88px;
+    min-height: 100dvh;
+    padding-bottom: var(--mobile-tabbar-height);
+    background: #061014;
+  }
+
+  .guide-screen,
+  .info-screen {
+    display: none;
+  }
+
+  .guide-screen.is-active,
+  .info-screen.is-active {
+    display: block;
+  }
+
+  .guide-screen.is-active {
+    height: calc(100dvh - var(--mobile-tabbar-height));
+    min-height: 0;
+    overflow: hidden;
+    background: #f5fafb;
+  }
+
+  .desktop-agent-layer {
+    display: none;
+  }
+
+  .mobile-bottom-tabs {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    min-height: var(--mobile-tabbar-height);
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(6, 16, 20, 0.94);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-bottom-tabs button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 48px;
+    color: #b8d3dc;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    font-weight: 850;
+  }
+
+  .mobile-bottom-tabs button.is-active {
+    color: #061014;
+    border-color: #43bed0;
+    background: #43bed0;
+  }
+
+  .info-screen.is-active {
+    min-height: calc(100dvh - var(--mobile-tabbar-height));
+    overflow: auto;
     background:
       linear-gradient(180deg, #43bed0 0, #43bed0 292px, #061014 292px, #071317 100%);
+  }
+
+  .guide-agent-panel {
+    position: static;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
   }
 
   .hero {
@@ -1531,6 +1893,17 @@ button {
     height: 58px;
   }
 
+  .guide-agent-panel {
+    position: static;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
   .agent-header {
     padding: 13px 14px;
   }
@@ -1546,13 +1919,31 @@ button {
   }
 
   .message-list {
-    min-height: 190px;
+    min-height: 0;
     padding: 12px;
   }
 
   .message {
     max-width: 96%;
     font-size: 13px;
+  }
+
+  .guide-agent-panel .message-list {
+    min-height: 0;
+    overflow: auto;
+    padding: 12px 10px;
+  }
+
+  .guide-agent-panel .message.agent.has-route {
+    max-width: 100%;
+  }
+
+  .guide-agent-panel .inline-route-card {
+    margin-top: 0;
+  }
+
+  .guide-agent-panel .inline-hall-map-card .hall-plan-map {
+    max-height: 300px;
   }
 
   .chat-box {

@@ -2,10 +2,13 @@ import {
   Building2,
   Bus,
   Car,
+  ChevronDown,
   Filter,
+  Info,
   Layers,
   LocateFixed,
   MapPin,
+  Maximize2,
   MessageCircle,
   Plane,
   Route,
@@ -288,9 +291,9 @@ function buildRoute(exhibitors, pinnedIds, activeInterests, query) {
         .filter((item) => getResolvedHallNo(item) === "11")
         .map((item) => ({
           item,
-          score: scoreExhibitor(item, "AI 人工智能 AIGC 大模型 VR 数字 科技 文化贸易", ["ai", "trade"]),
+          score: scoreExhibitor(item, "AI 人工智能 AIGC 大模型 VR 数字 科技 文化贸易", ["ai", "trade"]) + mapReadinessScore(item),
         }))
-        .filter(({ score }) => score > 0)
+        .filter(({ item }) => scoreExhibitor(item, "AI 人工智能 AIGC 大模型 VR 数字 科技 文化贸易", ["ai", "trade"]) > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 4)
         .map(({ item }) => item)
@@ -298,9 +301,10 @@ function buildRoute(exhibitors, pinnedIds, activeInterests, query) {
   const scored = exhibitors
     .map((item) => ({
       item,
-      score: scoreExhibitor(item, query, activeInterests),
+      matchScore: scoreExhibitor(item, query, activeInterests),
+      score: scoreExhibitor(item, query, activeInterests) + mapReadinessScore(item),
     }))
-    .filter(({ item, score }) => score > 0 && getResolvedHallNo(item) !== "00")
+    .filter(({ item, matchScore }) => matchScore > 0 && getResolvedHallNo(item) !== "00")
     .sort((a, b) => b.score - a.score)
     .slice(0, 80)
     .map(({ item }) => item);
@@ -382,8 +386,11 @@ function makeAnswer(query, exhibitors, activeInterests, routePlan) {
   const detected = detectInterests(text);
   const mergedInterests = detected.length ? detected : activeInterests;
   const matched = exhibitors
-    .map((item) => ({ item, score: scoreExhibitor(item, text, mergedInterests) }))
-    .filter(({ score }) => score > 0)
+    .map((item) => {
+      const matchScore = scoreExhibitor(item, text, mergedInterests);
+      return { item, matchScore, score: matchScore + mapReadinessScore(item) };
+    })
+    .filter(({ matchScore }) => matchScore > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 8)
     .map(({ item }) => item);
@@ -422,8 +429,11 @@ function makeAnswer(query, exhibitors, activeInterests, routePlan) {
 
   if (/ai|人工智能|切磋|waytoagi|11号馆|11馆/i.test(lower)) {
     const aiMatches = exhibitors
-      .map((item) => ({ item, score: scoreExhibitor(item, "AI 人工智能 大模型 机器人 VR 元宇宙 数字", ["ai"]) }))
-      .filter(({ item, score }) => score > 0 && ["11", "15", "16"].includes(getResolvedHallNo(item)))
+      .map((item) => {
+        const matchScore = scoreExhibitor(item, "AI 人工智能 大模型 机器人 VR 元宇宙 数字", ["ai"]);
+        return { item, matchScore, score: matchScore + mapReadinessScore(item) };
+      })
+      .filter(({ item, matchScore }) => matchScore > 0 && ["11", "15", "16"].includes(getResolvedHallNo(item)))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map(({ item }) => item);
@@ -494,6 +504,84 @@ function payloadRouteStop(stop) {
   };
 }
 
+function renderInlineMarkdown(text) {
+  const segments = String(text || "").split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g).filter(Boolean);
+  return segments.map((segment, index) => {
+    if (/^\*\*[^*]+\*\*$/.test(segment)) return <strong key={index}>{segment.slice(2, -2)}</strong>;
+    if (/^`[^`]+`$/.test(segment)) return <code key={index}>{segment.slice(1, -1)}</code>;
+    const link = segment.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (link) {
+      return (
+        <a key={index} href={link[2]} target="_blank" rel="noreferrer">
+          {link[1]}
+        </a>
+      );
+    }
+    return <React.Fragment key={index}>{segment}</React.Fragment>;
+  });
+}
+
+function MarkdownText({ text }) {
+  const lines = String(text || "").split(/\r?\n/);
+  const blocks = [];
+  let list = null;
+
+  function flushList() {
+    if (!list) return;
+    const Tag = list.type;
+    blocks.push(
+      <Tag key={`list-${blocks.length}`}>
+        {list.items.map((item, index) => (
+          <li key={index}>{renderInlineMarkdown(item)}</li>
+        ))}
+      </Tag>,
+    );
+    list = null;
+  }
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+
+    const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushList();
+      const Tag = `h${Math.min(heading[1].length + 2, 5)}`;
+      blocks.push(<Tag key={`heading-${blocks.length}`}>{renderInlineMarkdown(heading[2])}</Tag>);
+      return;
+    }
+
+    const ordered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+    if (ordered) {
+      if (!list || list.type !== "ol") {
+        flushList();
+        list = { type: "ol", items: [] };
+      }
+      list.items.push(ordered[1]);
+      return;
+    }
+
+    const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+    if (unordered) {
+      if (!list || list.type !== "ul") {
+        flushList();
+        list = { type: "ul", items: [] };
+      }
+      list.items.push(unordered[1]);
+      return;
+    }
+
+    flushList();
+    blocks.push(<p key={`paragraph-${blocks.length}`}>{renderInlineMarkdown(trimmed)}</p>);
+  });
+
+  flushList();
+  return <div className="markdown-body">{blocks}</div>;
+}
+
 function HallPlanMap({ hallNo, exhibitors = [], highlightedIds = new Set(), onMarkerClick, compact = false }) {
   const image = hallMapImages[hallNo];
   const markers = uniqueById(exhibitors)
@@ -549,10 +637,17 @@ function HallPlanMap({ hallNo, exhibitors = [], highlightedIds = new Set(), onMa
 function InlineRouteMap({ routePlan = [], exhibitors = [], onHallSelect, onExhibitorSelect }) {
   const initialHall = routePlan[0]?.hallNo || "";
   const [activeHall, setActiveHall] = useState(initialHall);
+  const [fullScreen, setFullScreen] = useState(false);
 
   useEffect(() => {
     if (initialHall) setActiveHall(initialHall);
   }, [initialHall]);
+
+  useEffect(() => {
+    if (!fullScreen) return undefined;
+    document.body.classList.add("has-route-fullscreen");
+    return () => document.body.classList.remove("has-route-fullscreen");
+  }, [fullScreen]);
 
   if (!routePlan.length) return null;
 
@@ -560,30 +655,33 @@ function InlineRouteMap({ routePlan = [], exhibitors = [], onHallSelect, onExhib
   const currentHall = activeHall || routePlan[0]?.hallNo;
   const activeStop = routePlan.find((stop) => stop.hallNo === currentHall) || routePlan[0];
   const activeExhibitors = activeStop?.exhibitors || [];
+  const stopTabs = routePlan.slice(0, 6).map((stop, index) => (
+    <button
+      key={stop.hallNo}
+      className={stop.hallNo === currentHall ? "is-active" : ""}
+      type="button"
+      onClick={() => {
+        setActiveHall(stop.hallNo);
+        if (fullScreen) onHallSelect?.(stop.hallNo);
+      }}
+    >
+      <span>{index + 1}</span>
+      <strong>{stop.title}</strong>
+      <em>{stop.exhibitors.length}家</em>
+    </button>
+  ));
 
   return (
     <div className="inline-route-card">
       <div className="inline-route-head">
         <strong>场馆路线图</strong>
         <span>{exhibitors.length} 个目标商家 · {routePlan.length} 个展馆</span>
+        <button className="route-expand-button" type="button" onClick={() => setFullScreen(true)}>
+          <Maximize2 size={15} />
+          全屏
+        </button>
       </div>
-      <div className="inline-route-stops">
-        {routePlan.slice(0, 6).map((stop, index) => (
-          <button
-            key={stop.hallNo}
-            className={stop.hallNo === currentHall ? "is-active" : ""}
-            type="button"
-            onClick={() => {
-              setActiveHall(stop.hallNo);
-              onHallSelect?.(stop.hallNo);
-            }}
-          >
-            <span>{index + 1}</span>
-            <strong>{stop.title}</strong>
-            <em>{stop.exhibitors.length}家</em>
-          </button>
-        ))}
-      </div>
+      <div className="inline-route-stops">{stopTabs}</div>
       <div className="inline-hall-map-card" aria-label={`${activeStop?.title || ""} 对话内场馆图`}>
         <div className="inline-hall-map-head">
           <strong>{activeStop?.title}</strong>
@@ -607,7 +705,125 @@ function InlineRouteMap({ routePlan = [], exhibitors = [], onHallSelect, onExhib
           </button>
         ))}
       </div>
+      {fullScreen && (
+        <div className="route-fullscreen" role="dialog" aria-modal="true" aria-label="全屏路线图">
+          <div className="route-fullscreen-header">
+            <div>
+              <strong>{activeStop?.title || "路线图"}</strong>
+              <span>{exhibitors.length} 个目标商家 · 点击展馆切换路线段</span>
+            </div>
+            <button type="button" onClick={() => setFullScreen(false)} title="关闭全屏路线图">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="route-fullscreen-stops">{stopTabs}</div>
+          <div className="route-fullscreen-map">
+            <HallPlanMap hallNo={activeStop?.hallNo} exhibitors={activeExhibitors} highlightedIds={targetIds} onMarkerClick={onExhibitorSelect} />
+          </div>
+          <div className="route-fullscreen-targets">
+            {exhibitors.slice(0, 8).map((item) => (
+              <button key={item.id} type="button" onClick={() => onExhibitorSelect?.(item)}>
+                <strong>{item.shortName || item.name}</strong>
+                <span>
+                  {formatHallNumber(getResolvedHallNo(item))}号馆 {item.booth || "展位待查"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function AgentMessage({ message, index, onHallSelect, onExhibitorSelect }) {
+  const hasRoute = message.role === "agent" && !message.pending && message.routePlan?.length;
+
+  return (
+    <div className={`message ${message.role} ${message.pending ? "is-pending" : ""} ${hasRoute ? "has-route" : ""}`} key={message.id || `${message.role}-${index}`}>
+      {message.role === "agent" && !message.pending && hasRoute ? (
+        <>
+          <InlineRouteMap
+            routePlan={message.routePlan}
+            exhibitors={message.exhibitors}
+            onHallSelect={onHallSelect}
+            onExhibitorSelect={onExhibitorSelect}
+          />
+          <details className="message-details">
+            <summary>
+              <ChevronDown size={15} />
+              查看文字结果
+            </summary>
+            <MarkdownText text={message.text} />
+          </details>
+        </>
+      ) : (
+        <div className="message-text">
+          {message.role === "agent" && !message.pending ? <MarkdownText text={message.text} /> : message.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgentPanelContent({
+  agentStatus,
+  chatInput,
+  chatEndRef,
+  className = "",
+  messages,
+  onClose,
+  onExhibitorSelect,
+  onHallSelect,
+  setChatInput,
+  submitChat,
+}) {
+  return (
+    <aside className={`agent-panel ${className}`.trim()} aria-label="文博会对话助手">
+      <div className="agent-header">
+        <MessageCircle size={20} />
+        <div>
+          <strong>文博会 Agent</strong>
+          <span>{agentStatus} · 商家列表 · 路线规划</span>
+        </div>
+        {onClose && (
+          <button className="agent-close" type="button" title="收起对话助手" onClick={onClose}>
+            <X size={18} />
+          </button>
+        )}
+      </div>
+      <div className="prompt-row">
+        {starterPrompts.map((prompt) => (
+          <button key={prompt} type="button" onClick={() => submitChat(prompt)}>
+            {prompt}
+          </button>
+        ))}
+      </div>
+      <div className="message-list">
+        {messages.map((message, index) => (
+          <AgentMessage
+            key={message.id || `${message.role}-${index}`}
+            message={message}
+            index={index}
+            onHallSelect={onHallSelect}
+            onExhibitorSelect={onExhibitorSelect}
+          />
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+      <form
+        className="chat-box"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submitChat();
+        }}
+      >
+        <input value={chatInput} onChange={(event) => setChatInput(event.target.value)} placeholder="问：想看AI文旅产品、推荐路线..." />
+        <button type="submit" title="发送">
+          <Send size={18} />
+        </button>
+      </form>
+    </aside>
   );
 }
 
@@ -621,8 +837,9 @@ export default function App() {
   const [selectedInterests, setSelectedInterests] = useState(["ai", "tourism"]);
   const [pinnedIds, setPinnedIds] = useState(new Set());
   const [showGuide, setShowGuide] = useState(false);
+  const [activeTab, setActiveTab] = useState("guide");
   const [agentOpen, setAgentOpen] = useState(false);
-  const [agentStatus, setAgentStatus] = useState("DeepSeek V4");
+  const [agentStatus, setAgentStatus] = useState("导览助手已就绪");
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -731,6 +948,7 @@ export default function App() {
 
   function selectInlineHall(hallNo) {
     setSelectedHall(hallNo);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches && activeTab === "guide") return;
     document.querySelector(".venue-board")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -742,7 +960,12 @@ export default function App() {
       return next;
     });
     setQuery(exhibitor.name);
-    document.querySelector(".exhibitor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches) {
+      setActiveTab("info");
+      window.setTimeout(() => document.querySelector(".exhibitor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    } else {
+      document.querySelector(".exhibitor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   async function submitChat(value = chatInput) {
@@ -756,8 +979,10 @@ export default function App() {
 
     const temporaryRoute = buildRoute(exhibitors, pinnedIds, nextInterests, clean);
     const answer = makeAnswer(clean, exhibitors, nextInterests, temporaryRoute);
-    setAgentOpen(true);
-    setAgentStatus("DeepSeek V4 · 思考中");
+    if (!(typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches)) {
+      setAgentOpen(true);
+    }
+    setAgentStatus("正在整理展商与路线建议");
     if (answer.pinned?.length) {
       setPinnedIds(new Set(answer.pinned.slice(0, 18).map((item) => item.id)));
       const firstHall = answer.pinned.map(getResolvedHallNo).find((hallNo) => hallNo !== "00");
@@ -767,7 +992,7 @@ export default function App() {
     setMessages((current) => [
       ...current,
       { role: "user", text: clean },
-      { id: pendingId, role: "agent", text: "正在调用 DeepSeek V4 生成展商列表和路线建议...", pending: true },
+      { id: pendingId, role: "agent", text: "正在整理相关展商、场馆分布与逛展路线...", pending: true },
     ]);
     setChatInput("");
 
@@ -786,7 +1011,7 @@ export default function App() {
       });
       const result = await response.json();
       const finalText = result?.text || answer.text;
-      setAgentStatus(result?.status === "deepseek" ? `${result.model || "DeepSeek V4"} · 已连接` : "本地备用 · DeepSeek 未连接");
+      setAgentStatus(result?.status === "deepseek" ? "已生成智能导览建议" : "已使用本地路线规划");
       setMessages((current) =>
         current.map((message) =>
           message.id === pendingId
@@ -795,13 +1020,13 @@ export default function App() {
                 pending: false,
                 routePlan: answer.routePlan || [],
                 exhibitors: answer.pinned || [],
-                text: result?.status === "deepseek" ? finalText : `${finalText}\n\n（DeepSeek 暂时不可用，已使用本地路线规划结果。）`,
+                text: result?.status === "deepseek" ? finalText : `${finalText}\n\n（在线服务暂时不可用，已使用本地路线规划结果。）`,
               }
             : message,
         ),
       );
     } catch {
-      setAgentStatus("本地备用 · DeepSeek 未连接");
+      setAgentStatus("已使用本地路线规划");
       setMessages((current) =>
         current.map((message) =>
           message.id === pendingId
@@ -810,7 +1035,7 @@ export default function App() {
                 pending: false,
                 routePlan: answer.routePlan || [],
                 exhibitors: answer.pinned || [],
-                text: `${answer.text}\n\n（DeepSeek 暂时不可用，已使用本地路线规划结果。）`,
+                text: `${answer.text}\n\n（在线服务暂时不可用，已使用本地路线规划结果。）`,
               }
             : message,
         ),
@@ -820,7 +1045,22 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <section className="hero">
+      <section className={`guide-screen ${activeTab === "guide" ? "is-active" : ""}`}>
+        <AgentPanelContent
+          agentStatus={agentStatus}
+          chatInput={chatInput}
+          chatEndRef={chatEndRef}
+          className="guide-agent-panel"
+          messages={messages}
+          onExhibitorSelect={selectInlineExhibitor}
+          onHallSelect={selectInlineHall}
+          setChatInput={setChatInput}
+          submitChat={submitChat}
+        />
+      </section>
+
+      <section className={`info-screen ${activeTab === "info" ? "is-active" : ""}`}>
+        <section className="hero">
         <div className="ribbon ribbon-one" />
         <div className="ribbon ribbon-two" />
         <div className="hero-top">
@@ -1112,64 +1352,42 @@ export default function App() {
           </section>
         </section>
       </section>
+      </section>
 
-      {!agentOpen && (
-        <button className="agent-fab" type="button" title="打开文博会 Agent" onClick={() => setAgentOpen(true)}>
-          <MessageCircle size={24} />
-          <span>问</span>
-          {pinnedIds.size > 0 && <em>{pinnedIds.size}</em>}
+      <div className="desktop-agent-layer">
+        {!agentOpen && (
+          <button className="agent-fab" type="button" title="打开文博会 Agent" onClick={() => setAgentOpen(true)}>
+            <MessageCircle size={24} />
+            <span>问</span>
+            {pinnedIds.size > 0 && <em>{pinnedIds.size}</em>}
+          </button>
+        )}
+
+        {agentOpen && (
+          <AgentPanelContent
+            agentStatus={agentStatus}
+            chatInput={chatInput}
+            chatEndRef={chatEndRef}
+            messages={messages}
+            onClose={() => setAgentOpen(false)}
+            onExhibitorSelect={selectInlineExhibitor}
+            onHallSelect={selectInlineHall}
+            setChatInput={setChatInput}
+            submitChat={submitChat}
+          />
+        )}
+      </div>
+
+      <nav className="mobile-bottom-tabs" aria-label="底部导航">
+        <button className={activeTab === "guide" ? "is-active" : ""} type="button" onClick={() => setActiveTab("guide")}>
+          <MessageCircle size={19} />
+          <span>智能导览</span>
         </button>
-      )}
-
-      {agentOpen && (
-        <aside className="agent-panel" aria-label="文博会对话助手">
-          <div className="agent-header">
-            <MessageCircle size={20} />
-            <div>
-              <strong>文博会 Agent</strong>
-              <span>{agentStatus} · 商家列表 · 路线规划</span>
-            </div>
-            <button className="agent-close" type="button" title="收起对话助手" onClick={() => setAgentOpen(false)}>
-              <X size={18} />
-            </button>
-          </div>
-          <div className="prompt-row">
-            {starterPrompts.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => submitChat(prompt)}>
-                {prompt}
-              </button>
-            ))}
-          </div>
-          <div className="message-list">
-            {messages.map((message, index) => (
-              <div className={`message ${message.role} ${message.pending ? "is-pending" : ""}`} key={message.id || `${message.role}-${index}`}>
-                <div className="message-text">{message.text}</div>
-                {message.role === "agent" && !message.pending && (
-                  <InlineRouteMap
-                    routePlan={message.routePlan}
-                    exhibitors={message.exhibitors}
-                    onHallSelect={selectInlineHall}
-                    onExhibitorSelect={selectInlineExhibitor}
-                  />
-                )}
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-          <form
-            className="chat-box"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitChat();
-            }}
-          >
-            <input value={chatInput} onChange={(event) => setChatInput(event.target.value)} placeholder="问：想看AI文旅产品、推荐路线..." />
-            <button type="submit" title="发送">
-              <Send size={18} />
-            </button>
-          </form>
-        </aside>
-      )}
+        <button className={activeTab === "info" ? "is-active" : ""} type="button" onClick={() => setActiveTab("info")}>
+          <Info size={19} />
+          <span>信息</span>
+        </button>
+      </nav>
     </main>
   );
 }
